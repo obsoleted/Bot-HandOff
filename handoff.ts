@@ -41,7 +41,7 @@ export interface Provider {
     connectCustomerToAgent: (by: By, agentAddress: builder.IAddress) => Promise<Conversation>;
     connectCustomerToBot: (by: By) => Promise<boolean>;
     queueCustomerForAgent: (by: By) => Promise<boolean>;
-    
+
     // Get
     getConversation: (by: By, customerAddress?: builder.IAddress) => Promise<Conversation>;
     getCurrentConversations: () => Promise<Conversation[]>;
@@ -81,6 +81,12 @@ export class Handoff {
         } else {
             this.routeCustomerMessage(session, next);
         }
+    }
+
+    public async tweakConvo(
+        conversationId: string
+    ){
+        return await this.queueCustomerForAgent({ customerConversationId: conversationId});
     }
 
     private async routeAgentMessage(session: builder.Session) {
@@ -147,7 +153,7 @@ export class Handoff {
     public getConversation = async (by: By, customerAddress?: builder.IAddress): Promise<Conversation> => {
         return await this.provider.getConversation(by, customerAddress);
     }
-    
+
     public getCurrentConversations = async (): Promise<Conversation[]> => {
         return await this.provider.getCurrentConversations();
     }

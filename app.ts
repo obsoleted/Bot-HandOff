@@ -1,5 +1,6 @@
 import * as express from 'express';
 import * as builder from 'botbuilder';
+import * as bodyParser from 'body-parser';
 import { Handoff } from './handoff';
 import { commandsMiddleware } from './commands';
 
@@ -25,7 +26,8 @@ const bot = new builder.UniversalBot(connector, [
         session.endConversation('Echo ' + session.message.text);
     }
 ]);
-
+// parse application/json
+app.use(bodyParser.json());
 app.get('/api/conversations', async (req, res) => {
     const authHeader = req.headers['authorization'];
     console.log(authHeader);
@@ -34,6 +36,22 @@ app.get('/api/conversations', async (req, res) => {
         if(authHeader === 'Bearer ' + process.env.MICROSOFT_APP_PASSWORD) {
             let conversations = await mongoseProvider.getCurrentConversations()
             res.status(200).send(conversations);
+        }
+    }
+    res.status(401).send('Not Authorized');
+});
+
+app.post('/api/conversations', async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    console.log(authHeader);
+    console.log(req.headers);
+    if(authHeader) {
+        if(authHeader === 'Bearer ' + process.env.MICROSOFT_APP_PASSWORD) {
+            if (await handoff.tweakConvo(req.body.conversationId)) {
+                res.status(200).send("Ok");
+            } else {
+                res.status(400).send("Meh");
+            }
         }
     }
     res.status(401).send('Not Authorized');
