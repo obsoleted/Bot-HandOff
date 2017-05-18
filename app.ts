@@ -3,12 +3,13 @@ import * as builder from 'botbuilder';
 import { Handoff } from './handoff';
 import { commandsMiddleware } from './commands';
 
+import { MongooseProvider } from './mongoose-provider';
 //=========================================================
 // Bot Setup
 //=========================================================
 
 const app = express();
-
+const mongoseProvider = new MongooseProvider()
 // Setup Express Server
 app.listen(process.env.port || process.env.PORT || 3978, '::', () => {
     console.log('Server Up');
@@ -25,13 +26,26 @@ const bot = new builder.UniversalBot(connector, [
     }
 ]);
 
+app.get('/api/conversations', async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    console.log(authHeader);
+    console.log(req.headers);
+    if(authHeader) {
+        if(authHeader === 'Bearer ' + process.env.MICROSOFT_APP_PASSWORD) {
+            let conversations = await mongoseProvider.getCurrentConversations()
+            res.status(200).send(conversations);
+        }
+    }
+    res.status(401).send('Not Authorized');
+});
+
 app.post('/api/messages', connector.listen());
 
 // Create endpoint for agent / call center
 app.use('/webchat', express.static('public'));
 
 // replace this function with custom login/verification for agents
-const isAgent = (session: builder.Session) => 
+const isAgent = (session: builder.Session) =>
     session.message.user.name.startsWith("Agent");
 
 const handoff = new Handoff(bot, isAgent);
